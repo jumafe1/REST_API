@@ -1,12 +1,14 @@
 # file to configure test
+import os
 from typing import AsyncGenerator, Generator
 
 import pytest
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 
+os.environ["ENV_STATE"] = "test"
+from socialapi.database import database  # noqa: E402
 from socialapi.main import app
-from socialapi.routers.post import comment_table, post_table
 
 
 #
@@ -24,9 +26,9 @@ def client() -> Generator:
 # clear the tables, before run any test.
 @pytest.fixture(autouse=True)  # to run on nay test
 async def db() -> AsyncGenerator:  # the async function it is for database
-    post_table.clear()
-    comment_table.clear()
+    await database.connect()
     yield
+    await database.disconnect()  # autmatic rollback
 
 
 # make request to our API while test runing

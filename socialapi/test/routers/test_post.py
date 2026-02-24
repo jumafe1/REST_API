@@ -21,6 +21,7 @@ async def create_comment(body: str, post_id: int, async_client: AsyncClient) -> 
 
 
 @pytest.fixture()  # use when testing requiererd post to already exist.
+@pytest.mark.anyio
 async def created_post(
     async_client: AsyncClient,
 ):  # this is fixture, use dependency injection. the value injecten dinamycally. see if theres a ficture async_client. Call it conftest
@@ -30,6 +31,7 @@ async def created_post(
 
 
 @pytest.fixture()  # use when testing requiererd post to already exist.
+@pytest.mark.anyio
 async def created_comment(async_client: AsyncClient, created_post: dict):
     return await create_comment("Test comment", created_post["id"], async_client)
 
@@ -42,7 +44,7 @@ async def test_create_post(async_client: AsyncClient):
 
     assert response.status_code == 201
     assert {
-        "id": 0,
+        "id": 1,
         "body": body,
     }.items() <= response.json().items()  # this is expected in the response json
 
@@ -79,7 +81,7 @@ async def test_create_comment(async_client: AsyncClient, created_post: dict):
 
     assert response.status_code == 200
     assert {
-        "id": 0,
+        "id": 1,
         "body": body,
         "post_id": created_post["id"],
     }.items() <= response.json().items()
@@ -132,3 +134,6 @@ async def test_get_missing_post_with_comments(
 
     response = await async_client.get("/post/2")
     assert response.status_code == 404
+
+
+# lo que hicimos se puedes hacer en insomia/postman, pero aca es mas facil llevar un path
