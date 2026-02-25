@@ -2,15 +2,14 @@ from functools import lru_cache  # for use chashing
 from typing import Optional
 
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 
 
 # populate configuration variables
 class BaseConfig(BaseSettings):
     ENV_STATE: Optional[str] = None
 
-    class Config:
-        env_file: str = ".env"
-        extra = "ignore"
+    model_config = ConfigDict(env_file=".env", extra="ignore")
 
 
 class GlobalConfig(BaseConfig):
@@ -19,21 +18,18 @@ class GlobalConfig(BaseConfig):
 
 
 class Devconfig(GlobalConfig):
-    class Config:
-        env_prefix = "DEV_"  # this is for prefix the variables in the .env file, for example, if we want to have different variables for development and production, we can use the prefix to differentiate them/
+    model_config = ConfigDict(env_prefix="DEV_")  # prefix the variables in the .env file to differentiate dev/prod/test
 
 
 class ProdConfig(GlobalConfig):
-    class Config:
-        env_prefix = "PROD_"
+    model_config = ConfigDict(env_prefix="PROD_")
 
 
 class TestConfig(GlobalConfig):
     DATABASE_URL: str = "sqlite:///test.db"
     DB_FORCE_ROLL_BACK: bool = True  # after every test the database is clear
 
-    class Config:
-        env_prefix = "TEST_"
+    model_config = ConfigDict(env_prefix="TEST_")
 
 
 # this function returns the same thing everything

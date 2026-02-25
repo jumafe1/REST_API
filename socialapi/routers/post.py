@@ -47,7 +47,7 @@ async def create_comment(
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     data = comment.model_dump()
-    query = comment_table.insert.values(data)
+    query = comment_table.insert().values(data)
     last_record_id = await database.execute(query)
     return {
         **data,

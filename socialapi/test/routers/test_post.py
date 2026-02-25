@@ -21,7 +21,6 @@ async def create_comment(body: str, post_id: int, async_client: AsyncClient) -> 
 
 
 @pytest.fixture()  # use when testing requiererd post to already exist.
-@pytest.mark.anyio
 async def created_post(
     async_client: AsyncClient,
 ):  # this is fixture, use dependency injection. the value injecten dinamycally. see if theres a ficture async_client. Call it conftest
@@ -31,7 +30,6 @@ async def created_post(
 
 
 @pytest.fixture()  # use when testing requiererd post to already exist.
-@pytest.mark.anyio
 async def created_comment(async_client: AsyncClient, created_post: dict):
     return await create_comment("Test comment", created_post["id"], async_client)
 
