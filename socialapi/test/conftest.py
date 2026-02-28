@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 
 os.environ["ENV_STATE"] = "test"
-from socialapi.database import database  # noqa: E402
+from socialapi.database import database, user_table  # noqa: E402
 from socialapi.main import app
 
 
@@ -42,6 +42,16 @@ async def async_client(client: TestClient) -> AsyncGenerator[AsyncClient, None]:
         base_url=str(client.base_url),  # importante: que sea string
     ) as ac:
         yield ac
+
+
+@pytest.fixture()
+async def registered_user(async_client: AsyncClient) -> dict:
+    user_details = {"email": "test@example.net", "password": "1234"}
+    await async_client.post("/register", json=user_details)
+    query = user_table.select().where(user_table.c.email == user_details["email"])
+    user = await database.fetch_one(query)
+    user_details["id"] = user.id
+    return user_details
 
 
 # @pytest.fixture()

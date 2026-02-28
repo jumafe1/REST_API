@@ -6,6 +6,15 @@ from socialapi.config import config  # this is gonna run the config module.
 
 metadata = sqlalchemy.MetaData()
 
+
+user_table = sqlalchemy.Table(
+    "users",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("email", sqlalchemy.String, unique=True),
+    sqlalchemy.Column("password", sqlalchemy.String),
+)
+
 post_table = sqlalchemy.Table(
     "posts",
     metadata,

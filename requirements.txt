@@ -4,3 +4,10 @@ sqlalchemy
 databases[aiosqlite]
 python-dotenv
 pydantic-settings
+rich
+asgi-correlation-id
+python-json-logger
+logtail-python
+python-jose
+python-multipart
+passlib[bcrypt]

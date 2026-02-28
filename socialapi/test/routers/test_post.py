@@ -11,8 +11,6 @@ async def create_post(body: str, async_client: AsyncClient) -> dict:
 
 
 # function for create comment, like the above but comments
-
-
 async def create_comment(body: str, post_id: int, async_client: AsyncClient) -> dict:
     response = await async_client.post(
         "/comment", json={"body": body, "post_id": post_id}

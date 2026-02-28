@@ -1,8 +1,8 @@
 from functools import lru_cache  # for use chashing
 from typing import Optional
 
-from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
+from pydantic_settings import BaseSettings
 
 
 # populate configuration variables
@@ -15,10 +15,13 @@ class BaseConfig(BaseSettings):
 class GlobalConfig(BaseConfig):
     DATABASE_URL: str = None
     DB_FORCE_ROLL_BACK: bool = False  # after every test the database is clear
+    LOGTAIL_API_KEY: Optional[str] = None
 
 
 class Devconfig(GlobalConfig):
-    model_config = ConfigDict(env_prefix="DEV_")  # prefix the variables in the .env file to differentiate dev/prod/test
+    model_config = ConfigDict(
+        env_prefix="DEV_"
+    )  # prefix the variables in the .env file to differentiate dev/prod/test
 
 
 class ProdConfig(GlobalConfig):
