@@ -10,4 +10,4 @@ python-json-logger
 logtail-python
 python-jose
 python-multipart
-passlib[bcrypt]
+bcrypt

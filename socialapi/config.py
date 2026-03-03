@@ -13,7 +13,7 @@ class BaseConfig(BaseSettings):
 
 
 class GlobalConfig(BaseConfig):
-    DATABASE_URL: str = None
+    DATABASE_URL: Optional[str] = None
     DB_FORCE_ROLL_BACK: bool = False  # after every test the database is clear
     LOGTAIL_API_KEY: Optional[str] = None
 
