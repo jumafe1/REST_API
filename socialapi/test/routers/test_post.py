@@ -48,7 +48,9 @@ async def created_comment(
 
 
 @pytest.mark.anyio  # para toda test toca decirle al test que se va a utilizar anyo
-async def test_create_post(async_client: AsyncClient, logged_in_token: str):
+async def test_create_post(
+    async_client: AsyncClient, logged_in_token: str, registered_user: dict
+):
     body = "Test Post"
 
     response = await async_client.post(
@@ -61,6 +63,7 @@ async def test_create_post(async_client: AsyncClient, logged_in_token: str):
     assert {
         "id": 1,
         "body": body,
+        "user_id": registered_user["id"],
     }.items() <= response.json().items()  # this is expected in the response json
 
 
@@ -78,7 +81,9 @@ async def test_create_post_expired_token(
     )  # full input path function
     token = security.create_access_token(registered_user["email"])
     response = await async_client.post(
-        "/post", json={"body": "Test post"}, headers={"Authorization": f"Bearer {token}"}
+        "/post",
+        json={"body": "Test post"},
+        headers={"Authorization": f"Bearer {token}"},
     )
 
     assert response.status_code == 401
@@ -111,7 +116,10 @@ async def test_get_all_post(
 
 @pytest.mark.anyio
 async def test_create_comment(
-    async_client: AsyncClient, created_post: dict, logged_in_token: str
+    async_client: AsyncClient,
+    created_post: dict,
+    logged_in_token: str,
+    registered_user: dict,
 ):
     body = "Test comment"
 
@@ -126,6 +134,7 @@ async def test_create_comment(
         "id": 1,
         "body": body,
         "post_id": created_post["id"],
+        "user_id": registered_user["id"],
     }.items() <= response.json().items()
 
 

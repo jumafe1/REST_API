@@ -12,6 +12,7 @@ class UserPost(
 ):  # Como Hereda UserpostIn, ya tiene body:str. modelo de salida
     model_config = ConfigDict(from_attributes=True)
     id: int
+    user_id: int
 
 
 class CommentIn(BaseModel):
@@ -24,6 +25,7 @@ class Comment(CommentIn):
         from_attributes=True
     )  # pydantci will return_value["body"] and if it fails, return_value.body
     id: int
+    user_id: int
 
 
 class UserPostwithComments(

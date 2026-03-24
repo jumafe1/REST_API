@@ -1,6 +1,7 @@
 import logging
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 
 from socialapi.database import comment_table, database, post_table
 from socialapi.models.post import (
@@ -11,7 +12,7 @@ from socialapi.models.post import (
     UserPostwithComments,
 )
 from socialapi.models.user import User
-from socialapi.security import get_current_user, oauth2_scheme
+from socialapi.security import get_current_user
 
 router = APIRouter()  # this is basicly a fastAPI app, but insted of runing on its own, in can be included into existing app
 
@@ -30,14 +31,14 @@ async def find_post(post_id: int):  # busca post por id en post_table
 # in order to create a post i need a access token. In orden to create a post i need to log in.
 @router.post("/post", response_model=UserPost, status_code=201)
 async def create_post(
-    post: UserPostIn, request: Request
+    post: UserPostIn, current_user: Annotated[User, Depends(get_current_user)]
 ):  # endporint, 1, fastAPI toma el JSON del body request y lo valida con Pydantic.
     logger.info("Create post")
-    # this is going to go into the clients request and grab the bearer token and pass it to get current user. the line is make that u need to create an account to create a post
-    current_user: User = await get_current_user(
-        await oauth2_scheme(request)
-    )  # current_user is a user object. (with the token, get_current_user is going to make sure that token is valid.
-    data = post.model_dump()  # convierte el modelo de pydantic a dict
+
+    data = {
+        **post.model_dump(),
+        "user_id": current_user.id,
+    }  # convierte el modelo de pydantic a dict
     query = post_table.insert().values(data)
     last_record_id = await database.execute(query)
     logger.debug(query)
@@ -63,10 +64,11 @@ async def get_all_post():  # enpoint
 
 # Create a endpoint to create new comments:
 @router.post("/comment", response_model=Comment)
-async def create_comment(comment: CommentIn, request: Request):
+async def create_comment(
+    comment: CommentIn, current_user: Annotated[User, Depends(get_current_user)]
+):
 
     logger.info("Creating Comment")
-    current_user: User = await get_current_user(await oauth2_scheme(request))
 
     post = await find_post(comment.post_id)
     if not post:
@@ -74,7 +76,7 @@ async def create_comment(comment: CommentIn, request: Request):
             f"logger with id {comment.post_id} not found"
         )  # when about its wrong.
         raise HTTPException(status_code=404, detail="Post not found")
-    data = comment.model_dump()
+    data = {**comment.model_dump(), "user_id": current_user.id}
     query = comment_table.insert().values(data)
 
     logger.debug(query)
