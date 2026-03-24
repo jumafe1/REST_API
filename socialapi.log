@@ -72,3 +72,8 @@ FROM posts
 {"asctime": "2026-02-28T20:04:16", "msecs": 330.0, "levelname": "INFO", "correlation_id": "-", "name": "uvicorn.error", "lineno": 67, "message": "Waiting for application shutdown."}
 {"asctime": "2026-02-28T20:04:16", "msecs": 332.0, "levelname": "INFO", "correlation_id": "-", "name": "uvicorn.error", "lineno": 76, "message": "Application shutdown complete."}
 {"asctime": "2026-02-28T20:04:16", "msecs": 333.0, "levelname": "INFO", "correlation_id": "-", "name": "uvicorn.error", "lineno": 102, "message": "Finished server process [14544]", "color_message": "Finished server process [\u001b[36m%d\u001b[0m]"}
+{"asctime": "2026-03-23T18:58:32", "msecs": 124.0, "levelname": "INFO", "correlation_id": "-", "name": "uvicorn.error", "lineno": 62, "message": "Application startup complete."}
+{"asctime": "2026-03-23T18:58:34", "msecs": 752.0, "levelname": "INFO", "correlation_id": "-", "name": "uvicorn.error", "lineno": 272, "message": "Shutting down"}
+{"asctime": "2026-03-23T18:58:34", "msecs": 857.0, "levelname": "INFO", "correlation_id": "-", "name": "uvicorn.error", "lineno": 67, "message": "Waiting for application shutdown."}
+{"asctime": "2026-03-23T18:58:34", "msecs": 859.0, "levelname": "INFO", "correlation_id": "-", "name": "uvicorn.error", "lineno": 76, "message": "Application shutdown complete."}
+{"asctime": "2026-03-23T18:58:34", "msecs": 860.0, "levelname": "INFO", "correlation_id": "-", "name": "uvicorn.error", "lineno": 102, "message": "Finished server process [26264]", "color_message": "Finished server process [\u001b[36m%d\u001b[0m]"}
