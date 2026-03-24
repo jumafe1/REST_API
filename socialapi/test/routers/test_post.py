@@ -29,6 +29,18 @@ async def create_comment(
     return response.json()
 
 
+# function to like a post
+async def like_post(
+    post_id: int, async_client: AsyncClient, logged_in_token: str
+) -> dict:
+    response = await async_client.post(
+        "/like",
+        json={"post_id": post_id},
+        headers={"Authorization": f"Bearer {logged_in_token}"},
+    )
+    return response.json()
+
+
 @pytest.fixture()  # use when testing requiererd post to already exist.
 async def created_post(
     async_client: AsyncClient, logged_in_token: str
@@ -100,6 +112,19 @@ async def test_create_post_missing_data(
     assert response.status_code == 422
 
 
+@pytest.mark.anyio
+async def test_like_post(
+    async_client: AsyncClient, created_post: dict, logged_in_token
+):
+    response = await async_client.post(
+        "/like",
+        json={"post_id": created_post["id"]},
+        headers={"Authorization": f"Bearer {logged_in_token}"},
+    )
+
+    assert response.status_code == 201
+
+
 # test for getting all post
 # if we have a error that inpedent us to call out Api, that error appeear in create post. If the API works as expected, we should get the JSON response.
 @pytest.mark.anyio
@@ -108,12 +133,52 @@ async def test_get_all_post(
 ):  # we use the dict post, because now we retrieven. how works pytest with fixture, frist, we put the fixture name and then pytest look in the current file for afixture name, and call it,
     response = await async_client.get("/post")
     assert response.status_code == 200
-    assert response.json() == [created_post]
+    assert created_post.items() <= response.json()[0].items()
+
+
+@pytest.mark.anyio
+# parametraicing
+@pytest.mark.parametrize(
+    "sorting, expected_order",
+    [
+        ("new", [2, 1]),
+        ("old", [1, 2]),
+    ],
+)
+async def test_get_all_post_sorting(
+    async_client: AsyncClient,
+    logged_in_token: str,
+    sorting: str,
+    expected_order: list[int],
+):
+    await create_post("Test post 1", async_client, logged_in_token)
+    await create_post("Test post 2", async_client, logged_in_token)
+    response = await async_client.get("/post", params={"sorting": sorting})
+    assert response.status_code == 200
+
+    data = response.json()
+    post_ids = [post["id"] for post in data]
+    assert post_ids == expected_order
+
+
+@pytest.mark.anyio
+async def test_get_all_post_sort_likes(
+    async_client: AsyncClient,
+    logged_in_token: str,
+):
+    await create_post("Test post 1", async_client, logged_in_token)
+    await create_post("Test post 2", async_client, logged_in_token)
+    await like_post(1, async_client, logged_in_token)
+    response = await async_client.get("/post", params={"sorting": "most_likes"})
+    assert response.status_code == 200
+
+    data = response.json()
+    post_ids = [post["id"] for post in data]
+    expected_order = [1, 2]
+    assert post_ids == expected_order
 
 
 # test that we can create comment:
-
-
 @pytest.mark.anyio
 async def test_create_comment(
     async_client: AsyncClient,
@@ -170,7 +235,10 @@ async def test_get_post_with_comments(
     response = await async_client.get(f"/post/{created_post['id']}")
 
     assert response.status_code == 200
-    assert response.json() == {"post": created_post, "comments": [created_comment]}
+    assert response.json() == {
+        "post": {**created_post, "likes": 0},
+        "comments": [created_comment],
+    }
 
 
 # get the post with comments when the post does not exist:

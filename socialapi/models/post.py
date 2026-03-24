@@ -15,6 +15,11 @@ class UserPost(
     user_id: int
 
 
+class UserPostwithLikes(UserPost):
+    likes: int
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CommentIn(BaseModel):
     body: str
     post_id: int
@@ -31,5 +36,14 @@ class Comment(CommentIn):
 class UserPostwithComments(
     BaseModel
 ):  # modelo de devolver el post con todos los comentarios.
-    post: UserPost
+    post: UserPostwithLikes
     comments: list[Comment] = []
+
+
+class PostLikeIn(BaseModel):
+    post_id: int
+
+
+class PostLike(PostLikeIn):
+    id: int
+    user_id: int
