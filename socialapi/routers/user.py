@@ -1,6 +1,8 @@
 import logging
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 
 from socialapi.database import database, user_table
 from socialapi.models.user import UserIn
@@ -35,9 +37,9 @@ async def register(user: UserIn):
 # our login endpoint:
 # userIn because we are going to receive the email and password.
 @router.post("/token")
-async def login(user: UserIn):
+async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     user = await authenticate_user(
-        user.email, user.password
+        form_data.username, form_data.password
     )  # the function authenticate_user return the user record from our database if the user exists and the password is correct.
     access_token = create_access_token(user.email)
     return {"access_token": access_token, "token_type": "bearer"}
