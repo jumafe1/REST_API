@@ -11,3 +11,6 @@ logtail-python
 python-jose
 python-multipart
 bcrypt
+httpx
+aiofiles
+b2sdk

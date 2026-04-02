@@ -15,7 +15,12 @@ class BaseConfig(BaseSettings):
 class GlobalConfig(BaseConfig):
     DATABASE_URL: Optional[str] = None
     DB_FORCE_ROLL_BACK: bool = False  # after every test the database is clear
+    MAILGUN_DOMAIN: Optional[str] = None
+    MAILGUN_API_KEY: Optional[str] = None
     LOGTAIL_API_KEY: Optional[str] = None
+    B2_KEY_ID: Optional[str] = None
+    B2_APPLICATION_KEY: Optional[str] = None
+    B2_BUCKET_NAME: Optional[str] = None
 
 
 class Devconfig(GlobalConfig):

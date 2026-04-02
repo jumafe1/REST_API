@@ -13,6 +13,7 @@ user_table = sqlalchemy.Table(
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("email", sqlalchemy.String, unique=True),
     sqlalchemy.Column("password", sqlalchemy.String),
+    sqlalchemy.Column("confirmed", sqlalchemy.Boolean, default=False),
 )
 
 post_table = sqlalchemy.Table(
