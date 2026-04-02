@@ -1,6 +1,6 @@
 # Social Media REST API
 
-A social media REST API built with FastAPI. Users can register, log in, create posts, comment on posts, like posts, and retrieve posts with sorting options.
+A social media REST API built with FastAPI. Users register with email confirmation, log in with JWT tokens, create posts, comment, like posts, and retrieve posts with sorting options.
 
 ---
 
@@ -14,6 +14,8 @@ A social media REST API built with FastAPI. Users can register, log in, create p
 | Auth | JWT Bearer tokens (HS256) |
 | Validation | Pydantic v2 |
 | Password Hashing | bcrypt |
+| Email | Mailgun (via httpx, background tasks) |
+| File Storage | Backblaze B2 (b2sdk) |
 | Testing | pytest + httpx (async) |
 | Logging | RichHandler + rotating file + Logtail |
 
@@ -23,26 +25,33 @@ A social media REST API built with FastAPI. Users can register, log in, create p
 
 ```
 REST_API/
-├── .env                    # Environment variables
-├── .env.example            # Env variable template
-├── data.db                 # Development SQLite database
-├── socialapi/
-│   ├── main.py             # App setup, middleware, lifespan
-│   ├── config.py           # Dev/Prod/Test environment config
-│   ├── database.py         # Table definitions and DB connection
-│   ├── security.py         # JWT, bcrypt, OAuth2 logic
-│   ├── logging_conf.py     # Logging setup with email obfuscation
-│   ├── models/
-│   │   ├── user.py         # User, UserIn
-│   │   └── post.py         # Post, Comment, Like models
-│   ├── routers/
-│   │   ├── user.py         # /register, /token
-│   │   └── post.py         # /post, /comment, /like
-│   └── test/
-│       ├── conftest.py     # Shared fixtures
-│       └── routers/
-│           ├── test_user.py
-│           └── test_post.py
+├── .env                        # Environment variables
+├── .env.example                # Env variable template
+├── data.db                     # Development SQLite database
+├── requirements.txt
+├── requirements-dev.txt
+└── socialapi/
+    ├── main.py                 # App setup, middleware, lifespan
+    ├── config.py               # Dev/Prod/Test environment config
+    ├── database.py             # Table definitions and DB connection
+    ├── security.py             # JWT, bcrypt, OAuth2 logic
+    ├── task.py                 # Background tasks (email via Mailgun)
+    ├── logging_conf.py         # Logging setup with email obfuscation
+    ├── libs/
+    │   └── b2/                 # Backblaze B2 file storage integration
+    ├── models/
+    │   ├── user.py             # User, UserIn
+    │   └── post.py             # Post, Comment, Like models
+    ├── routers/
+    │   ├── user.py             # /register, /token, /confirm/{token}
+    │   └── post.py             # /post, /comment, /like
+    └── test/
+        ├── conftest.py         # Shared fixtures
+        ├── test_security.py
+        ├── test_task.py
+        └── routers/
+            ├── test_user.py
+            └── test_post.py
 ```
 
 ---
@@ -51,25 +60,26 @@ REST_API/
 
 ```
 users
-├── id (PK)
-├── email (unique)
-└── password (hashed)
+├── id        (PK)
+├── email     (unique)
+├── password  (bcrypt hashed)
+└── confirmed (bool, default false)
 
 posts
-├── id (PK)
+├── id       (PK)
 ├── body
-└── user_id (FK → users.id)
+└── user_id  (FK → users.id)
 
 comments
-├── id (PK)
+├── id       (PK)
 ├── body
-├── post_id (FK → posts.id)
-└── user_id (FK → users.id)
+├── post_id  (FK → posts.id)
+└── user_id  (FK → users.id)
 
 likes
-├── id (PK)
-├── post_id (FK → posts.id)
-└── user_id (FK → users.id)
+├── id       (PK)
+├── post_id  (FK → posts.id)
+└── user_id  (FK → users.id)
 ```
 
 ---
@@ -80,8 +90,9 @@ likes
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/register` | No | Register a new user |
-| POST | `/token` | No | Login and receive a JWT token |
+| POST | `/register` | No | Register a new user (sends confirmation email) |
+| GET | `/confirm/{token}` | No | Confirm email address via token |
+| POST | `/token` | No | Login and receive a JWT (requires confirmed email) |
 
 **Register body:**
 ```json
@@ -97,6 +108,8 @@ username=user@example.com&password=yourpassword
 ```json
 { "access_token": "<jwt>", "token_type": "bearer" }
 ```
+
+> Login will return `401` if the user has not confirmed their email.
 
 ---
 
@@ -140,7 +153,13 @@ Protected endpoints require a Bearer token in the `Authorization` header:
 Authorization: Bearer <access_token>
 ```
 
-Tokens expire after **15 minutes**. On expiry the API returns `401 Unauthorized` with `"Token expired"` in the detail.
+Tokens expire after **15 minutes**. On expiry the API returns `401 Unauthorized` with `"Token has expired"` in the detail.
+
+### Email Confirmation Flow
+
+1. `POST /register` — creates the user and sends a confirmation email via Mailgun (background task)
+2. User clicks the link in the email → `GET /confirm/{token}`
+3. `POST /token` — login is only allowed after confirmation
 
 ---
 
@@ -150,11 +169,17 @@ Copy `.env.example` to `.env` and fill in the values:
 
 ```env
 ENV_STATE=dev
+
 DEV_DATABASE_URL=sqlite:///data.db
 DEV_LOGTAIL_API_KEY=your_logtail_key
+DEV_MAILGUN_DOMAIN=your_mailgun_domain
+DEV_MAILGUN_API_KEY=your_mailgun_api_key
+DEV_B2_KEY_ID=your_b2_key_id
+DEV_B2_APPLICATION_KEY=your_b2_application_key
+DEV_B2_BUCKET_NAME=your_b2_bucket_name
 ```
 
-For production, use `PROD_DATABASE_URL` and `PROD_LOGTAIL_API_KEY`.
+For production, prefix all variables with `PROD_` instead of `DEV_`.
 
 ---
 
@@ -179,7 +204,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Tests use a separate `test.db` with automatic rollback between each test so the database is always clean.
+Tests use a separate `test.db` with automatic rollback between each test so the database is always clean. Mailgun HTTP calls are mocked via `pytest-mock` — no real emails are sent during tests.
 
 ---
 
